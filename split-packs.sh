@@ -57,7 +57,7 @@ for PACK in `ls`; do
   git remote add origin $EXCHANGE_ORG_URL/$EXCHANGE_PREFIX-$PACK.git
   git fetch --all -q
 
-  if git log -n3 origin/master | grep -q "Transfer from $SUBTREE_ORG/$SUBTREE_REPO."
+  if git log -n3 --oneline | grep -q "Transfer from $SUBTREE_ORG/$SUBTREE_REPO."
   then
   	echo "Already transferred to $EXCHANGE_ORG_URL/$EXCHANGE_PREFIX-$PACK."
     echo
