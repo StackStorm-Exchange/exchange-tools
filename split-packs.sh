@@ -1,5 +1,14 @@
 #!/bin/bash
 
+##
+#  This migration script is provided without warranty.
+#  Use at your own risk, and backup your repo before running.
+#
+#  Note: This script does not create your remote repo.
+#  It is assumed you have already created an empty repo
+#  on the remote host with the pack name "stackstorm-<pack>".
+##
+
 set -e
 
 if [ $# -lt 1 ] || [[ $1 =~ ^-+h(elp)?$ ]] ; then
