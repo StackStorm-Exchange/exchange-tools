@@ -2,7 +2,7 @@
 
 set -e
 
-if [ $# -lt 1 ] || [[ $1 =~ "-" ]] ; then
+if [ $# -lt 1 ] || [[ $1 =~ ^-+h(elp)?$ ]] ; then
     echo "Usage: $0 subtree_repo_url [new_org_url]"
     echo "Example: $0 https://github.com/example/mysubtreerepo.git git@github.com:example2"
     exit
