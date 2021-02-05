@@ -12,60 +12,37 @@ _exit() {
     exit $1
 }
 
+source $(dirname $0)/functions.sh
+
 _check_dependencies() {
-    if ! which -s http; then
-        echo >&2 "This script requires the 'http' command to be installed and accessible in the \$PATH."
-        echo >&2 "Please install the httpie package and rerun this command."
-        echo >&2 "Exiting."
-        exit 2
-    fi
-    if ! which -s jq; then
-        echo >&2 "This script requires the 'jq' command to be installed and accessible in the \$PATH."
-        echo >&2 "Please install the jq package and rerun this command."
-        echo >&2 "Exiting."
-        exit 2
-    fi
+    _need_gh
 }
 
 
 _clone_organization() {
     GITHUB_ORG=$1
-    LINK_HEADER=$(http --headers "https://api.github.com/orgs/$GITHUB_ORG/repos" | grep 'Link:')
+	for repo in $(_gh_list_repo_names ${GITHUB_ORG} ''); do
+		# Clone the repository if it doesn't exist
+		if [[ ! -d "$repo" ]]; then
+			gh repo clone ${GITHUB_ORG}/${repo}
+		else (
+				# If it does exist, fetch all branches
+				echo "In $repo" >$STDOUT_LOGFILE 2>$STDERR_LOGFILE
+				cd $repo
+				git fetch --all >$STDOUT_LOGFILE 2>$STDERR_LOGFILE
+			)
+		fi
+		EXIT_CODE=$?
+		[[ $EXIT_CODE -eq 0 ]] || {
+			[[ "$FAIL_FAST" == "true" ]] && {
+				_exit $EXIT_CODE "Exiting on error"
 
-    GH_ORG_ID=$(echo $LINK_HEADER | sed 's|Link: <.*https://api.github.com/organizations/\([[:digit:]]*\)/repos?page=[[:digit:]]*>\; rel="next".*|\1|')
-    NEXT_PAGE=$(echo $LINK_HEADER | sed 's|Link: <.*https://api.github.com/organizations/[[:digit:]]*/repos?page=\([[:digit:]]*\)>\; rel="next".*|\1|')
-    LAST_PAGE=$(echo $LINK_HEADER | sed 's|Link: <.*https://api.github.com/organizations/[[:digit:]]*/repos?page=\([[:digit:]]*\)>\; rel="last".*|\1|')
-
-    FIRST_PAGE=$NEXT_PAGE
-    if [[ "$FIRST_PAGE" -gt 1 ]]; then
-        FIRST_PAGE=$(expr $FIRST_PAGE - 1)
-    fi
-
-    for page in $(seq $FIRST_PAGE $LAST_PAGE); do
-        for clone_url in $(http "https://api.github.com/orgs/$GITHUB_ORG/repos?page=$page" | jq -r '.[].clone_url');do
-            REPO=$(echo $clone_url | sed 's|^https://github.com/StackStorm-Exchange/\(.*\)\.git|\1|')
-            # Clone the repository if it doesn't exist
-            if [[ ! -d "$REPO" ]]; then
-                git clone $clone_url
-            else (
-                    # If it does exist, fetch all branches
-                    echo "In $REPO" >$STDOUT_LOGFILE 2>$STDERR_LOGFILE
-                    cd $REPO
-                    git fetch --all >$STDOUT_LOGFILE 2>$STDERR_LOGFILE
-                )
-            fi
-            EXIT_CODE=$?
-            [[ $EXIT_CODE -eq 0 ]] || {
-                [[ "$FAIL_FAST" == "true" ]] && {
-                    _exit $EXIT_CODE "Exiting on error"
-
-                }
-            }
-            [[ -n "$SIGINT_STOP" ]] && {
-                echo "Caught SIGINT. Exiting." >$STDOUT_LOGFILE
-                _exit 0
-            }
-        done
+			}
+		}
+		[[ -n "$SIGINT_STOP" ]] && {
+			echo "Caught SIGINT. Exiting." >$STDOUT_LOGFILE
+			_exit 0
+		}
     done
 }
 
