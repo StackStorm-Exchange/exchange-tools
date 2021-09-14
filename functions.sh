@@ -76,6 +76,27 @@ _gh_list_repo_names() {
 	_gh_repos_query "${GITHUB_ORG}" "${PREFIX}" name
 }
 
+_gh_repos_tags() {
+    GITHUB_ORG=${1}
+	PREFIX=${2}
+
+    gh api --paginate graphql -f owner="${GITHUB_ORG}" -f query='
+      query ($owner: String!, $per_page: Int = 100, $endCursor: String) {
+        repositoryOwner(login: $owner) {
+          repositories(first: $per_page, after: $endCursor, ownerAffiliations: OWNER) {
+            nodes {
+              name
+              refs(refPrefix: "refs/tags/", last: 100) {
+                nodes { name }
+              }
+            }
+            pageInfo { hasNextPage endCursor }
+          }
+        }
+      }
+    ' | jq -r '.data.repositoryOwner.repositories.nodes[] | select(.name | startswith("'"${PREFIX}"'")) | {name: .name, tags: [.refs.nodes[].name] }'
+}
+
 _gh_default_branch() {
     # get the default branch for the current repo (might not be master)
 
