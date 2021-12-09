@@ -38,6 +38,7 @@ while [[ -n "$1" ]]; do
             echo >&2 "Examples:"
             echo >&2 ""
             echo >&2 "pack-all.sh --skipif='[[ \\$(git branch) ]]' yq"
+            echo >&2 "pack-all.sh --skipif='_gh_is_merged_in_default||_gh_pr_created' yq"
             echo >&2 ""
             exit 1
         elif [[ "${1:2}" = "quiet" ]]; then
@@ -65,7 +66,11 @@ if [[ -z "$COMMAND" ]]; then
     # exit 1
 fi
 
-for pack in $(find . -type f -name 'pack.yaml' -depth 2 -exec sh -c 'basename $(dirname {})' \; | grep '^stackstorm-' | sort); do
+# make functions available in the subshell
+# eg: exchange-tools/pack-all.sh git checkout '$(_gh_default_branch)'
+source $(dirname $0)/functions.sh
+
+for pack in $(find . -depth -maxdepth 2 -type f -name 'pack.yaml' -exec sh -c 'basename $(dirname {})' \; | grep '^stackstorm-' | sort); do
     [[ $VERBOSE -gt 4 ]] && echo "In $pack"
     # Not 100% sure this is bug-free
     if [[ -n "$SKIPIF" ]]; then
