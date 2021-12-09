@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# script that runs a git subcommand across all pack repos
+
 SIGINT_STOP=
 _stop() {
     SIGINT_STOP=stop

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# script that runs bash operations across all packs
+
 SIGINT_STOP=
 _stop() {
     SIGINT_STOP=stop
